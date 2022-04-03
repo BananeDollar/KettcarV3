@@ -15,9 +15,10 @@ int _editingValue = false;
 //Constructor
 LCDMenu::LCDMenu()
 {
-	settingsValues[maxSpeedSetting] = 50;
-	settingsValues[MaxPedalThrottleSetting] = 100;
-	settingsValues[MaxRemoteThrottleSetting] = 10;
+	settingsValues[MaxSpeedSettingIndex] = 50;
+	settingsValues[SpeedometerGranularitySettingIndex] = 10;
+	settingsValues[MaxPedalThrottleSettingIndex] = 100;
+	settingsValues[MaxRemoteThrottleSettingIndex] = 10;
 }
 
 //init method
@@ -26,8 +27,6 @@ void LCDMenu::init()
 	_lcd.init();
 	_lcd.backlight();
 	_lcd.clear();
-	_lcd.setCursor(0, 0);
-	_lcd.print("Initialized!");
 
 	_cursorPosition = 0;
 	_maxSelection = 4;
@@ -76,7 +75,26 @@ void LCDMenu::RotaryInput(int value)
 {
 	if (_editingValue)
 	{
-		settingsValues[_cursorPosition - 1] += value;
+		int newVal = settingsValues[_cursorPosition - 1] + value;
+		
+		// check if newVal is smaler than maxSettingsValues and larger than minSettingsValues
+		if (newVal > maxSettingsValues[_cursorPosition - 1])
+		{
+			newVal = maxSettingsValues[_cursorPosition - 1];
+		}
+		else if (newVal < minSettingsValues[_cursorPosition - 1])
+		{
+			newVal = minSettingsValues[_cursorPosition - 1];
+		}
+
+		// Apply Value
+		settingsValues[_cursorPosition - 1] = newVal;
+		
+		// Send Update to Listeners
+		if (onSettingsChangeList[_cursorPosition - 1] != NULL)
+		{
+			onSettingsChangeList[_cursorPosition - 1](newVal, _cursorPosition - 1);
+		}
 	}
 	else
 	{
@@ -159,6 +177,20 @@ void LCDMenu::SetSpeed(int speed)
 	}
 }
 
+void LCDMenu::WriteExecutionTime(long executionTime)
+{
+	if (!_settingsMenu)
+	{
+		_lcd.setCursor(0,1);
+		_lcd.print(String(executionTime) + "ms ");
+	}
+}
+
+void LCDMenu::AddSetttingsChangeListener(SettingsListener listener, int settingsIndex)
+{
+	onSettingsChangeList[settingsIndex] = listener;
+}
+
 
 void LCDMenu::DrawMainScreen()
 {
@@ -170,11 +202,16 @@ void LCDMenu::DrawMainScreen()
 	}
 	else
 	{
-		_lcd.print("Rückwärts");
+		/*
+		 \xE1 = ä
+		 \xEF  ö
+		 \xF5 ü
+		*/
+		_lcd.print("R\xF5\ckw\xE1rts");
 	}
 	_lcd.setCursor(0, 3);
 	_lcd.print("-Einstellungen-");
-	
+
 	DrawCursor();
 }
 

@@ -36,7 +36,6 @@ DallasTemperature thermometers(&oneWire);
 
 // -- Settings --
 int wirelessTimeoutDelay = 400; // Milliseconds
-int footPedalScaledown = 40; // Analog Value will be devided by this value
 
 // -- Changing --
 long lastRecievedTime;
@@ -51,10 +50,12 @@ int footPedalBaseLineReading = 0;
 int directThrottle;
 int wirelessThrottle;
 
+int maxPedalThrottle = 100;
+int maxRemoteThrottle = 10;
+
 int currentThrottle = 0;
 
 // -- Header --
-void SetThrottle(int, bool);
 void IRAM_ATTR HallInterrupt();
 void IRAM_ATTR OnRotaryEncoder();
 void IRAM_ATTR OnButtonPress();
@@ -78,13 +79,33 @@ void setup()
 	Serial.println("Initialized");
 
 	//hallBaseLineReading = analogRead(pin_hallSensor);
-	SetThrottle(0, true);
+	currentThrottle = 0;
 
 	footPedalBaseLineReading = analogRead(pin_footPedal);
 
 	digitalWrite(pin_BatteryA, LOW);
 	digitalWrite(pin_BatteryB, LOW);
 	digitalWrite(pin_BatteryC, LOW);
+
+	lcdMenu.AddSetttingsChangeListener(UpdateSpeedometerSettings, MaxSpeedSettingIndex);
+	lcdMenu.AddSetttingsChangeListener(UpdateSpeedometerSettings, SpeedometerGranularitySettingIndex);
+	lcdMenu.AddSetttingsChangeListener(UpdateMaxPedalThrottle, MaxPedalThrottleSettingIndex);
+	lcdMenu.AddSetttingsChangeListener(UpdateMaxRemoteThrottle, MaxRemoteThrottleSettingIndex);
+}
+
+void UpdateSpeedometerSettings(int value, int index)
+{
+	speedometer.UpdateSettings(value, index);
+}
+
+void UpdateMaxPedalThrottle(int value, int index)
+{
+	maxPedalThrottle = value;
+}
+
+void UpdateMaxRemoteThrottle(int value, int index)
+{
+	maxRemoteThrottle = value;
 }
 
 void InitIO()
@@ -117,14 +138,6 @@ void InitRadio()
 }
 #pragma endregion
 
-void SetThrottle(int throttle, bool forceUpdate = false)
-{
-	if (currentThrottle != throttle || forceUpdate)
-	{
-		currentThrottle = throttle;
-	}
-}
-
 #pragma region Events
 void IRAM_ATTR HallInterrupt()
 {
@@ -152,7 +165,9 @@ void IRAM_ATTR OnButtonPress()
 
 void loop(void)
 {
-	int directThrottle = map(analogRead(pin_footPedal) / footPedalScaledown, footPedalBaseLineReading / footPedalScaledown, 4095 / footPedalScaledown, 0, 100);
+	int executionTime = millis();
+	
+	int directThrottle = map(analogRead(pin_footPedal), footPedalBaseLineReading, 4095, 0, 100);
 
 	if (radio.available(0))
 	{
@@ -163,19 +178,19 @@ void loop(void)
 
 		if (directThrottle == 0) // Only use wireless Value when foot pedal is not pressed
 		{
-			SetThrottle(wirelessThrottle);
+			currentThrottle = map(wirelessThrottle,0,100, 0, maxRemoteThrottle);
 		}
 	}
-
+	
 	if (directThrottle != 0) // if foot pedal is pressed
 	{
-		SetThrottle(directThrottle);
+		currentThrottle = map(directThrottle, 0, 100, 0, maxPedalThrottle);
 	}
 	else
 	{
 		if (millis() > lastRecievedTime + wirelessTimeoutDelay) // wireless timeout 
 		{
-			SetThrottle(0);
+			currentThrottle = 0;
 		}
 	}
 	
@@ -194,4 +209,6 @@ void loop(void)
 	int speed = currentThrottle / 2;
 	lcdMenu.SetSpeed(speed);
 	speedometer.Update(speed);
+
+	//lcdMenu.WriteExecutionTime(millis() - executionTime);
 }

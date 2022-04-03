@@ -31,7 +31,21 @@ void OledSpeedometer::EnableTimeout(bool enableTimeout)
 	_timeoutCountdown = 0;
 }
 
-void OledSpeedometer::Update(float currentSpeed) // - 128 x 64
+void OledSpeedometer::UpdateSettings(int value, int index)
+{
+	switch (index)
+	{
+	case MaxSpeedSettingIndex:
+		_maxSpeed = value;
+		break;
+	case SpeedometerGranularitySettingIndex:
+		_granularity = value;
+		break;
+	}
+	_timeoutCountdown = 0;
+}
+
+void OledSpeedometer::Update(int currentSpeed) // - 128 x 64
 {
 	if (_enableTimeout)
 	{
@@ -69,13 +83,14 @@ void OledSpeedometer::Update(float currentSpeed) // - 128 x 64
 
 	// Gauge Texts
 	_oled.setTextSize(1);
-	for (int i = 0; i < 11; i++)
+	for (int i = 0; i < _granularity+1; i++)
 	{
-		int textX = 64 + 50 * -cos(i * 0.3141592);
-		int textY = 52 + 50 * -sin(i * 0.3141592);
+		int textX = 64 + 50 * -cos(i * 3.141592 / _granularity);
+		int textY = 52 + 50 * -sin(i * 3.141592 / _granularity);
 
 		_oled.setCursor(textX, textY);
-		_oled.println(i * 5);
+		// Value
+		_oled.println(i * int(((float)_maxSpeed) / ((float)_granularity)));
 	}
 
 	// Current Speed Text

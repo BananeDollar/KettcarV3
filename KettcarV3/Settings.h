@@ -15,7 +15,8 @@
 
 #define pin_thermometer 4
 
-#define settingsCount 3
-#define maxSpeedSetting 0
-#define MaxPedalThrottleSetting 1
-#define MaxRemoteThrottleSetting 2
+#define settingsCount 4
+#define MaxSpeedSettingIndex 0
+#define SpeedometerGranularitySettingIndex 1
+#define MaxPedalThrottleSettingIndex 2
+#define MaxRemoteThrottleSettingIndex 3
