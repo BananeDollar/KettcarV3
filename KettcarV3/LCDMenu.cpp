@@ -6,6 +6,9 @@
 LiquidCrystal_I2C _lcd(0x27, 20, 4);
 
 bool _isDriving = false;
+bool _enabledWireless = false;
+bool _hasWirelessSignal = false;
+bool _reverse = false;
 
 int _cursorPosition = 0;
 int _maxSelection = 0;
@@ -22,11 +25,20 @@ LCDMenu::LCDMenu()
 }
 
 //init method
-void LCDMenu::init()
+void LCDMenu::init(SettingsListener menuListener)
 {	
 	_lcd.init();
 	_lcd.backlight();
 	_lcd.clear();
+	
+	//EEPROM.begin(16);
+
+	//EEPROM.get(0, settingsValues[MaxSpeedSettingIndex]);
+	//EEPROM.get(4, settingsValues[SpeedometerGranularitySettingIndex]);
+	//EEPROM.get(8, settingsValues[MaxPedalThrottleSettingIndex]);
+	//EEPROM.get(12, settingsValues[MaxRemoteThrottleSettingIndex]);
+
+	onMenuToggle = menuListener;
 
 	_cursorPosition = 0;
 	_maxSelection = 4;
@@ -41,8 +53,11 @@ void LCDMenu::ButtonPress(int value) // 0 = no input, 1 = pressed, 2 = released
 		{
 			switch (_cursorPosition)
 			{
-			case 0: // Tempomat
-
+			case 0: // Tempomat / Reverse
+				onMenuToggle(1,0);
+				break;
+			case 1: // Wireless Toggle
+				onMenuToggle(1, 1);
 				break;
 			case 3: // Einstellungen
 				_settingsMenu = true;
@@ -64,6 +79,14 @@ void LCDMenu::ButtonPress(int value) // 0 = no input, 1 = pressed, 2 = released
 			else
 			{
 				_editingValue = !_editingValue;
+				if (!_editingValue)
+				{
+					//EEPROM.put(0, settingsValues[MaxSpeedSettingIndex]);
+					//EEPROM.put(4, settingsValues[SpeedometerGranularitySettingIndex]);
+					//EEPROM.put(8, settingsValues[MaxPedalThrottleSettingIndex]);
+					//EEPROM.put(12, settingsValues[MaxRemoteThrottleSettingIndex]);
+					//EEPROM.commit();
+				}
 			}
 		}
 	}
@@ -75,7 +98,7 @@ void LCDMenu::RotaryInput(int value)
 {
 	if (_editingValue)
 	{
-		int newVal = settingsValues[_cursorPosition - 1] + value;
+		int newVal = settingsValues[_cursorPosition - 1] - value * moveSteps[_cursorPosition - 1];
 		
 		// check if newVal is smaler than maxSettingsValues and larger than minSettingsValues
 		if (newVal > maxSettingsValues[_cursorPosition - 1])
@@ -94,6 +117,9 @@ void LCDMenu::RotaryInput(int value)
 		if (onSettingsChangeList[_cursorPosition - 1] != NULL)
 		{
 			onSettingsChangeList[_cursorPosition - 1](newVal, _cursorPosition - 1);
+
+			//if(_cursorPosition - 1)
+				//EEPROM.write(_cursorPosition - 1, 9); 
 		}
 	}
 	else
@@ -181,8 +207,25 @@ void LCDMenu::WriteExecutionTime(long executionTime)
 {
 	if (!_settingsMenu)
 	{
-		_lcd.setCursor(0,1);
-		_lcd.print(String(executionTime) + "ms ");
+		_lcd.setCursor(13,0);
+		_lcd.print(String(executionTime) + "ms  ");
+	}
+}
+
+void LCDMenu::SetWirelessSignal(bool enabled ,bool hasSignal)
+{
+	if (!_settingsMenu)
+	{
+		if (_hasWirelessSignal != hasSignal)
+		{
+			_hasWirelessSignal = hasSignal;
+			DrawWirelessStatus();
+		}
+		if (_enabledWireless != enabled)
+		{
+			_enabledWireless = enabled;
+			DrawWirelessStatus();
+		}
 	}
 }
 
@@ -191,6 +234,66 @@ void LCDMenu::AddSetttingsChangeListener(SettingsListener listener, int settings
 	onSettingsChangeList[settingsIndex] = listener;
 }
 
+void LCDMenu::SetSetting(int index, int value)
+{
+	settingsValues[index] = value;
+	onSettingsChangeList[index](value, index);
+}
+
+void LCDMenu::SetReverse(bool isInReverse)
+{
+	if (!_settingsMenu)
+	{
+		if (_reverse != isInReverse)
+		{
+			_reverse = isInReverse;
+
+			DrawDirectionText();
+		}
+	}
+}
+
+void LCDMenu::DisplayDebugValue(String text)
+{
+	_lcd.setCursor(0,2);
+	_lcd.print(text);
+}
+
+void LCDMenu::DrawWirelessStatus()
+{
+	if (!_settingsMenu)
+	{
+		_lcd.setCursor(0,1);
+		if (!_enabledWireless)
+		{
+			_lcd.print("Manual    ");
+		}
+		else
+		{
+			if (_hasWirelessSignal)
+			{
+				_lcd.print("- REMOTE -");
+			}
+			else
+			{
+				_lcd.print("NO  SIGNAL");
+			}
+		}
+	}
+}
+
+void LCDMenu::DrawDirectionText()
+{
+	_lcd.setCursor(0, 0);
+	if (_reverse)
+	{
+		_lcd.print("R\xF5\ckw\xE1rts");
+	}
+	else
+	{
+		_lcd.print("Vorw\xE1rts");
+	}
+}
 
 void LCDMenu::DrawMainScreen()
 {
@@ -207,10 +310,13 @@ void LCDMenu::DrawMainScreen()
 		 \xEF  ö
 		 \xF5 ü
 		*/
-		_lcd.print("R\xF5\ckw\xE1rts");
+		DrawDirectionText();
 	}
 	_lcd.setCursor(0, 3);
 	_lcd.print("-Einstellungen-");
+	
+	DrawWirelessStatus();
+	DrawDirectionText();
 
 	DrawCursor();
 }

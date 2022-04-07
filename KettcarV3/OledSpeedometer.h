@@ -22,9 +22,9 @@ protected:
 public:
 	OledSpeedometer();
 	void init();
-	void Update(int);
 	void EnableTimeout(bool);
 	void UpdateSettings(int, int);
+	void Update(int currentSpeed, bool forceUpdate=false);
 };
 
 #endif
