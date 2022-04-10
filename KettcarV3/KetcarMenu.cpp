@@ -6,12 +6,13 @@ KettcarMenu::KettcarMenu(LiquidCrystal_I2C* lcd, PCF8574* ioExpander)
 	_ioExpander = ioExpander;
 }
 
-void KettcarMenu::Init()
+void KettcarMenu::Init(MenuType* pointers...)
 {
-	MainMenu _mainMenu(_lcd, _ioExpander);
-	SettingsMenu _settingsMenu(_lcd);
-
-	*_subMenus = new MenuType[2]{ _mainMenu, _settingsMenu };
+	// Menu Count 
+	for (int i = 0; i < 2; i++)
+	{
+		_subMenus[i] = &pointers[i];
+	}
 	
 	_lcd->init();
 	_lcd->backlight();
@@ -28,7 +29,6 @@ void KettcarMenu::Draw()
 
 void KettcarMenu::OnScroll(int cursorChange)
 {
-	Serial.println("KettcarMenu::OnScroll");
 	_subMenus[_currentMenu]->OnScroll(cursorChange);
 }
 

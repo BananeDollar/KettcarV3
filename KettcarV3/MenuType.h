@@ -7,6 +7,7 @@ private:
 	int _currentCursorPosition;
 protected:
 	int _maxCursorPosition;
+	int _currentScroll;
 	LiquidCrystal_I2C* _lcd;
 	void MoveCursor(int);
 	int GetCursorPosition();

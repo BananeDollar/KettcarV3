@@ -1,8 +1,9 @@
 #include "MainMenu.h"
 #include <Arduino.h>
 
-MainMenu::MainMenu(LiquidCrystal_I2C* lcd, PCF8574* io_expander) : MenuType(lcd)
+MainMenu::MainMenu(LiquidCrystal_I2C* lcd, PCF8574* io_expander, KettcarMenu* menu) : MenuType(lcd)
 {
+	_menu = menu;
 	_maxCursorPosition = 3;
 	_ioExpander = io_expander;
 }
@@ -11,6 +12,7 @@ void MainMenu::Draw()
 {
 	DrawDirectionText();
 	DrawWirelessStatus();
+	MoveCursor(0); //Draw start cursor
 }
 
 void MainMenu::OnScroll(int cursorChange)
@@ -44,13 +46,18 @@ void MainMenu::OnClick()
 				_wirelessEnabled = true;
 			}
 		}
+		DrawWirelessStatus();
 		break;
 	}
 }
 
 void MainMenu::SetWirelessSignal(bool signal)
 {
-	_wirelessSignal = signal;
+	if (signal != _wirelessSignal)
+	{
+		_wirelessSignal = signal;
+		DrawWirelessStatus();
+	}
 }
 
 bool MainMenu::GetWirelessEnabled()

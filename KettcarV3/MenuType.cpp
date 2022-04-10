@@ -1,4 +1,4 @@
-#include "KetcarMenu.h"
+#include "MenuType.h"
 
 void MenuType::MoveCursor(int newPos)
 {
@@ -7,7 +7,7 @@ void MenuType::MoveCursor(int newPos)
 	_lcd->print(" ");
 
 	// Calculate New cursor Pos and Constrain it
-	_currentCursorPosition = newPos;
+	_currentCursorPosition += newPos;
 
 	if (_currentCursorPosition > _maxCursorPosition)
 	{
@@ -19,7 +19,7 @@ void MenuType::MoveCursor(int newPos)
 	}
 
 	// Draw New Cursor
-	_lcd->setCursor(19, newPos);
+	_lcd->setCursor(19, _currentCursorPosition);
 	_lcd->print("<");
 }
 

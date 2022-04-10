@@ -28,8 +28,9 @@ PCF8574 io_expander(0x20);
 LiquidCrystal_I2C _lcd(0x27, 20, 4);
 
 KettcarMenu _kettcarMenu(&_lcd, &io_expander);
-MainMenu* _mainMenu;
-SettingsMenu* _settingsMenu;
+
+MainMenu _mainMenu(&_lcd, &io_expander);
+SettingsMenu _settingsMenu(&_lcd);
 
 // -- Rotary Encoder --
 RotaryEncoder rotaryEncoder(pin_rotaryA, pin_rotaryB);
@@ -68,9 +69,7 @@ void setup()
 
 	thermometers.begin();
 	
-	_kettcarMenu.Init();
-	_mainMenu = _kettcarMenu.GetMainMenu();
-	_settingsMenu = _kettcarMenu.GetSettingsMenu();
+	_kettcarMenu.Init(&_mainMenu, & _settingsMenu);
 	
 	speedometer.init();
 	
@@ -85,9 +84,9 @@ void setup()
 	digitalWrite(pin_BatteryB, LOW);
 	digitalWrite(pin_BatteryC, LOW);
 	
-	_settingsMenu->SetSettingValue(PedalDeadzoneSettingIndex, analogRead(pin_footPedal) + 50);
+	_settingsMenu.SetSettingValue(PedalDeadzoneSettingIndex, analogRead(pin_footPedal) + 50);
 
-	//_kettcarMenu.Draw();
+	_kettcarMenu.Draw();
 }
 
 void InitIO()
@@ -129,7 +128,8 @@ void InitRadio()
 
 	radio.openReadingPipe(0, address);
 	//radio.printDetails();
-	radio.stopListening();
+	//radio.stopListening();
+	radio.startListening();
 }
 #pragma endregion
 
@@ -187,9 +187,9 @@ void loop(void)
 {
 	int executionTime = millis();
 	
-	int directThrottle = max((int)map(analogRead(pin_footPedal), _settingsMenu->GetSettingValue(PedalDeadzoneSettingIndex), 4095, 0, _settingsMenu->GetSettingValue(MaxPedalThrottleSettingIndex)), 0);
+	int directThrottle = max((int)map(analogRead(pin_footPedal), _settingsMenu.GetSettingValue(PedalDeadzoneSettingIndex), 4095, 0, _settingsMenu.GetSettingValue(MaxPedalThrottleSettingIndex)), 0);
 
-	if (_mainMenu->GetWirelessEnabled())
+	if (_mainMenu.GetWirelessEnabled())
 	{
 		if (radio.available(0))
 		{
@@ -198,16 +198,17 @@ void loop(void)
 			radio.read(&values, sizeof(values));
 			int wirelessThrottle = values[0];
 			int wirelessSteer = values[1];
-			_mainMenu->SetWirelessSignal(true);
+			_mainMenu.SetWirelessSignal(true);
+			//Serial.println(wirelessSteer);
 
 			if (directThrottle == 0) // Only use wireless Value when foot pedal is not pressed
 			{
-				currentThrottle = map(wirelessThrottle, 0, 100, 0, _settingsMenu->GetSettingValue(MaxRemoteThrottleSettingIndex));
+				currentThrottle = map(wirelessThrottle, 0, 100, 0, _settingsMenu.GetSettingValue(MaxRemoteThrottleSettingIndex));
 			}
 		}else if (millis() > lastRecievedTime + wirelessTimeoutDelay) // wireless timeout 
 		{
 			currentThrottle = 0;
-			_mainMenu->SetWirelessSignal(false);
+			_mainMenu.SetWirelessSignal(false);
 		}
 
 		UpdateSteer();
@@ -233,7 +234,7 @@ void loop(void)
 	
 	speedometer.Update(currentSpeed);
 	
-	_mainMenu->UpdateCurrentSpeed(currentSpeed);
+	_mainMenu.UpdateCurrentSpeed(currentSpeed);
 
 	//lcdMenu.WriteExecutionTime(millis() - executionTime);
 
