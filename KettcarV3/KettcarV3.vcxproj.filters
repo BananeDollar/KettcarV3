@@ -47,11 +47,11 @@
     <ClInclude Include="MainMenu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SettingsMenu.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="MenuType.h">
-      <Filter>Source Files</Filter>
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SettingsMenu.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

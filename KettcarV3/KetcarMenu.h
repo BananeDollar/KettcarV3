@@ -26,12 +26,11 @@ private:
 	MenuType* _subMenus[2];
 public:
 	KettcarMenu(LiquidCrystal_I2C*, PCF8574*);
-	void Init(MenuType* pointers...);
+	void Init(MenuType*, MenuType*);
 	void Draw();
 	void OnScroll(int cursorChange);
 	void OnClick();
-	MainMenu* GetMainMenu();
-	SettingsMenu* GetSettingsMenu();
+	void SetMenu(int);
 };
 
 extern KettcarMenu KetcarMenu;

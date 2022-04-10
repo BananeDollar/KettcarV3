@@ -27,10 +27,11 @@ OledSpeedometer speedometer;
 PCF8574 io_expander(0x20);
 LiquidCrystal_I2C _lcd(0x27, 20, 4);
 
+void ChangeMenu(int);
+void UpdateSpeedometerSettings();
 KettcarMenu _kettcarMenu(&_lcd, &io_expander);
-
-MainMenu _mainMenu(&_lcd, &io_expander);
-SettingsMenu _settingsMenu(&_lcd);
+MainMenu _mainMenu(&_lcd, &io_expander, ChangeMenu);
+SettingsMenu _settingsMenu(&_lcd, ChangeMenu,UpdateSpeedometerSettings);
 
 // -- Rotary Encoder --
 RotaryEncoder rotaryEncoder(pin_rotaryA, pin_rotaryB);
@@ -48,6 +49,7 @@ int wirelessTimeoutDelay = 400; // Milliseconds
 // -- Changing --
 long lastRecievedTime;
 int buttonInput = 0; // 0 = no input, 1 = pressed, 2 = released
+long lastButtonInputTime = 0;
 int hallCount = 0;
 int currentThrottle;
 int wirelessSteer;
@@ -65,11 +67,14 @@ void setup()
 
 	delay(200);
 	Serial.begin(9600);
+	
 	printf_begin();
 
 	thermometers.begin();
 	
-	_kettcarMenu.Init(&_mainMenu, & _settingsMenu);
+	_mainMenu.Init();
+	_kettcarMenu.Init(&_mainMenu, &_settingsMenu);
+	_settingsMenu.Init();
 	
 	speedometer.init();
 	
@@ -85,7 +90,7 @@ void setup()
 	digitalWrite(pin_BatteryC, LOW);
 	
 	_settingsMenu.SetSettingValue(PedalDeadzoneSettingIndex, analogRead(pin_footPedal) + 50);
-
+	
 	_kettcarMenu.Draw();
 }
 
@@ -134,6 +139,16 @@ void InitRadio()
 #pragma endregion
 
 #pragma region Events
+
+void UpdateSpeedometerSettings()
+{
+	speedometer.UpdateSettings(_settingsMenu.GetSettingValue(MaxSpeedSettingIndex), _settingsMenu.GetSettingValue(SpeedometerGranularitySettingIndex));
+}
+
+void ChangeMenu(int newMenu)
+{
+	_kettcarMenu.SetMenu(newMenu);
+}
 
 void IRAM_ATTR HallInterrupt()
 {
@@ -224,8 +239,9 @@ void loop(void)
 		rotaryEncoder.setPosition(0);
 	}
 
-	if (buttonInput == 1)
+	if (buttonInput == 1 && millis() - lastButtonInputTime > 200)
 	{
+		lastButtonInputTime = millis();
 		_kettcarMenu.OnClick();
 		buttonInput = 0;
 	}

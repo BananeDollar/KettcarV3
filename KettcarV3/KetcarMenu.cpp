@@ -6,13 +6,12 @@ KettcarMenu::KettcarMenu(LiquidCrystal_I2C* lcd, PCF8574* ioExpander)
 	_ioExpander = ioExpander;
 }
 
-void KettcarMenu::Init(MenuType* pointers...)
+void KettcarMenu::Init(MenuType* a, MenuType* b)
 {
 	// Menu Count 
-	for (int i = 0; i < 2; i++)
-	{
-		_subMenus[i] = &pointers[i];
-	}
+	
+	_subMenus[0] = a;
+	_subMenus[1] = b;
 	
 	_lcd->init();
 	_lcd->backlight();
@@ -24,6 +23,7 @@ void KettcarMenu::Init(MenuType* pointers...)
 
 void KettcarMenu::Draw()
 {
+	_lcd->clear();
 	_subMenus[_currentMenu]->Draw();
 }
 
@@ -37,12 +37,8 @@ void KettcarMenu::OnClick()
 	_subMenus[_currentMenu]->OnClick();
 }
 
-MainMenu* KettcarMenu::GetMainMenu()
+void KettcarMenu::SetMenu(int newMenu)
 {
-	return (MainMenu*)_subMenus[0];
-}
-
-SettingsMenu* KettcarMenu::GetSettingsMenu()
-{
-	return (SettingsMenu*)_subMenus[1];
+	_currentMenu = newMenu;
+	Draw();
 }
