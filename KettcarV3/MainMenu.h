@@ -19,4 +19,5 @@ public:
 	void SetWirelessSignal(bool signal);
 	bool GetWirelessEnabled();
 	void UpdateCurrentSpeed(int);
+	void drawDebugText(String);
 };

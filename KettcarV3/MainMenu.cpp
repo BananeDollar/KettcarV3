@@ -113,6 +113,12 @@ void MainMenu::UpdateCurrentSpeed(int speed)
 	_currentSpeed = speed;
 }
 
+void MainMenu::drawDebugText(String text)
+{
+	_lcd->setCursor(0, 2);
+	_lcd->print(text + "  ");
+}
+
 void MainMenu::DrawDirectionText()
 {
 	_lcd->setCursor(0, 0);
@@ -120,13 +126,13 @@ void MainMenu::DrawDirectionText()
 	{
 		_lcd->print("R\xF5\ckw\xE1rts ");
 		_lcd->setCursor(10,0);
-		_lcd->write(byte(0));
+		_lcd->write(byte(1));
 	}
 	else
 	{
 		_lcd->print("Vorw\xE1rts ");
 		_lcd->setCursor(10, 0);
-		_lcd->write(byte(1));
+		_lcd->write(byte(0));
 	}
 }
 

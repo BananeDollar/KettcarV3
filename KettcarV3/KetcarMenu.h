@@ -31,6 +31,8 @@ public:
 	void OnScroll(int cursorChange);
 	void OnClick();
 	void SetMenu(int);
+	void StartOTAUpdate();
+	void OTAUpdateFinished();
 };
 
 extern KettcarMenu KetcarMenu;

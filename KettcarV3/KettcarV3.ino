@@ -12,6 +12,8 @@
 #include <map>
 #include <RotaryEncoder.h>
 #include "Settings.h"
+//#include <WiFi.h>
+//#include <ArduinoOTA.h>
 
 /*
 -- I2C Adressen --
@@ -64,15 +66,17 @@ void IRAM_ATTR OnButtonPress();
 void setup()
 {
 	InitIO();
+	AttatchInterrupts();
 
 	delay(200);
 	Serial.begin(9600);
-	
-	printf_begin();
+	Serial.println("Started...");
+
+	//printf_begin();
 
 	thermometers.begin();
 	
-	_mainMenu.Init();
+    _mainMenu.Init();
 	_kettcarMenu.Init(&_mainMenu, &_settingsMenu);
 	_settingsMenu.Init();
 	
@@ -83,15 +87,38 @@ void setup()
 	Serial.print("IO Expander Found:");
 	Serial.println(io_expander.isConnected());
 
-	Serial.println("Initialized");
-
 	digitalWrite(pin_BatteryA, LOW);
 	digitalWrite(pin_BatteryB, LOW);
 	digitalWrite(pin_BatteryC, LOW);
 	
 	_settingsMenu.SetSettingValue(PedalDeadzoneSettingIndex, analogRead(pin_footPedal) + 50);
-	
+
+	Serial.print("PedalDeadzone:");
+	Serial.println(analogRead(pin_footPedal) + 50);
+
+
 	_kettcarMenu.Draw();
+	
+	/*
+	WiFi.begin("PECS","Llap-3,141");
+	WiFi.setHostname("Ketcar");
+
+	ArduinoOTA.setHostname("Ketcar");
+	ArduinoOTA.begin();
+
+
+	ArduinoOTA.onStart([]()
+		{
+			_kettcarMenu.StartOTAUpdate();
+		});
+	
+	ArduinoOTA.onEnd([]()
+		{
+			_kettcarMenu.OTAUpdateFinished();
+		});
+		*/
+
+	Serial.println("Initialized");
 }
 
 void InitIO()
@@ -100,20 +127,23 @@ void InitIO()
 
 	pinMode(pin_rotaryA, INPUT_PULLUP); // Encoder
 	pinMode(pin_rotaryB, INPUT_PULLUP); // Encoder
-	attachInterrupt(pin_rotaryA, OnRotaryEncoder, CHANGE); // Encoder
-	attachInterrupt(pin_rotaryB, OnRotaryEncoder, CHANGE); // Encoder
 	
 	pinMode(pin_button, INPUT_PULLUP); // Button
-	attachInterrupt(pin_button, OnButtonPress, CHANGE); // Button
 
 	pinMode(pin_hallSensor, INPUT); // Hall Sensor
-	attachInterrupt(pin_hallSensor, HallInterrupt, FALLING); // Hall Sensor
 
 	pinMode(pin_footPedal, INPUT); // Foot Pedal
+	digitalWrite(pin_footPedal, LOW);
 
 	pinMode(pin_BatteryA, OUTPUT); // Battery A
 	pinMode(pin_BatteryB, OUTPUT); // Battery B
 	pinMode(pin_BatteryC, OUTPUT); // Battery C
+
+	pinMode(pin_throttle,OUTPUT); // Throttle
+	digitalWrite(pin_throttle, LOW);
+
+	pinMode(pin_voltSense, INPUT); // Voltage Sense
+	pinMode(pin_ampSense, INPUT); // Amperage Sense
 
 	io_expander.begin();
 
@@ -121,7 +151,14 @@ void InitIO()
 	io_expander.write(1, HIGH);
 	io_expander.write(2, HIGH);
 	io_expander.write(3, HIGH);
+}
 
+void AttatchInterrupts()
+{
+	attachInterrupt(pin_rotaryA, OnRotaryEncoder, CHANGE); // Encoder
+	attachInterrupt(pin_rotaryB, OnRotaryEncoder, CHANGE); // Encoder
+	attachInterrupt(pin_button, OnButtonPress, CHANGE); // Button
+	attachInterrupt(pin_hallSensor, HallInterrupt, FALLING); // Hall Sensor
 }
 
 void InitRadio()
@@ -139,6 +176,10 @@ void InitRadio()
 #pragma endregion
 
 #pragma region Events
+
+void OTAUpdateStart() {
+
+}
 
 void UpdateSpeedometerSettings()
 {
@@ -203,6 +244,9 @@ void loop(void)
 	int executionTime = millis();
 	
 	int directThrottle = max((int)map(analogRead(pin_footPedal), _settingsMenu.GetSettingValue(PedalDeadzoneSettingIndex), 4095, 0, _settingsMenu.GetSettingValue(MaxPedalThrottleSettingIndex)), 0);
+	
+	//_mainMenu.drawDebugText(String(analogRead(pin_footPedal)));
+	//Serial.println(directThrottle);
 
 	if (_mainMenu.GetWirelessEnabled())
 	{
@@ -236,6 +280,8 @@ void loop(void)
 	if (rotaryEncoder.getPosition() != 0)
 	{
 		_kettcarMenu.OnScroll(rotaryEncoder.getPosition());
+		Serial.print("OnEncodeScroll:");
+		Serial.println(rotaryEncoder.getPosition());
 		rotaryEncoder.setPosition(0);
 	}
 
@@ -244,6 +290,7 @@ void loop(void)
 		lastButtonInputTime = millis();
 		_kettcarMenu.OnClick();
 		buttonInput = 0;
+		Serial.println("OnButtonPress");
 	}
 
 	int currentSpeed = currentThrottle; // TODO.... Hall Reading Magic
@@ -254,7 +301,9 @@ void loop(void)
 
 	//lcdMenu.WriteExecutionTime(millis() - executionTime);
 
-	digitalWrite(pin_BatteryA, currentSpeed > 0);
-	digitalWrite(pin_BatteryB, currentSpeed > 0);
-	digitalWrite(pin_BatteryC, currentSpeed > 0);
+	digitalWrite(pin_BatteryA, currentSpeed > 30);
+	digitalWrite(pin_BatteryB, currentSpeed > 60);
+	digitalWrite(pin_BatteryC, currentSpeed > 90);
+
+	//ArduinoOTA.handle();
 }

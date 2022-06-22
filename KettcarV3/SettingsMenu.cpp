@@ -33,14 +33,14 @@ void SettingsMenu::Draw()
 
 void SettingsMenu::Init()
 {
-	EEPROM.begin(4);
+	EEPROM.begin(20);
 	delay(200);
 
 	_settingsValues[MaxSpeedSettingIndex] = EEPROM.read(0);
-	_settingsValues[SpeedometerGranularitySettingIndex] = EEPROM.read(1);
-	_settingsValues[MaxPedalThrottleSettingIndex] = EEPROM.read(2);
+	_settingsValues[SpeedometerGranularitySettingIndex] = EEPROM.read(2);
+	_settingsValues[MaxPedalThrottleSettingIndex] = EEPROM.read(4);
 	//_settingsValues[PedalDeadzoneSettingIndex] = 50; // Set by Main ino File
-	_settingsValues[MaxRemoteThrottleSettingIndex] = EEPROM.read(3);
+	_settingsValues[MaxRemoteThrottleSettingIndex] = EEPROM.read(6);
 }
 
 void SettingsMenu::OnScroll(int cursorChange)
@@ -57,30 +57,30 @@ void SettingsMenu::OnScroll(int cursorChange)
 	}
 	else
 	{
-		if (GetCursorPosition())
+		int cursorPos = GetCursorPosition();
+		int line = cursorPos - GetCurrentScroll();
+		
+		int settingsIndex = cursorPos - 1;
+		_settingsValues[settingsIndex] -= cursorChange * _settingsIncrementSteps[settingsIndex];
+
+		if (_settingsValues[settingsIndex] < _minSettingsValues[settingsIndex])
 		{
-			int settingsIndex = GetCursorPosition() - 1;
-			_settingsValues[settingsIndex] -= cursorChange * _settingsIncrementSteps[settingsIndex];
-
-			if (_settingsValues[settingsIndex] < _minSettingsValues[settingsIndex])
-			{
-				_settingsValues[settingsIndex] = _minSettingsValues[settingsIndex];
-			}
-			else if (_settingsValues[settingsIndex] > _maxSettingsValues[settingsIndex])
-			{
-				_settingsValues[settingsIndex] = _maxSettingsValues[settingsIndex];
-			}
+			_settingsValues[settingsIndex] = _minSettingsValues[settingsIndex];
+		}
+		else if (_settingsValues[settingsIndex] > _maxSettingsValues[settingsIndex])
+		{
+			_settingsValues[settingsIndex] = _maxSettingsValues[settingsIndex];
+		}
 			
-			_lcd->setCursor(15, GetCursorPosition() - GetCurrentScroll());
-			_lcd->print(_settingsValues[settingsIndex]+"  ");
-			_lcd->setCursor(19, GetCursorPosition() - GetCurrentScroll());
-			_lcd->print("*");
+		_lcd->setCursor(15, line);
+		_lcd->print(String(_settingsValues[settingsIndex]) + "  ");
+		_lcd->setCursor(19, line);
+		_lcd->print("*");
 
-			// Update oled when settingsIndex is 0 or 1
-			if (settingsIndex == 0 || settingsIndex == 1)
-			{
-				_oledUpdate();
-			}
+		// Update oled when settingsIndex is 0 or 1
+		if (settingsIndex == 0 || settingsIndex == 1)
+		{
+			_oledUpdate();
 		}
 	}
 }
@@ -113,9 +113,9 @@ void SettingsMenu::OnClick()
 void SettingsMenu::SaveSettings()
 {
 	EEPROM.put(0, _settingsValues[MaxSpeedSettingIndex]);
-	EEPROM.put(1,_settingsValues[SpeedometerGranularitySettingIndex]);
-	EEPROM.put(2,_settingsValues[MaxPedalThrottleSettingIndex]);
-	EEPROM.put(3,_settingsValues[MaxRemoteThrottleSettingIndex]);
+	EEPROM.put(2,_settingsValues[SpeedometerGranularitySettingIndex]);
+	EEPROM.put(4,_settingsValues[MaxPedalThrottleSettingIndex]);
+	EEPROM.put(6,_settingsValues[MaxRemoteThrottleSettingIndex]);
 	EEPROM.commit();
 }
 
