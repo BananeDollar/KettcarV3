@@ -1,4 +1,4 @@
-#include "LCDMenu.h"
+#include "KetcarMenu.h"
 #include "OledSpeedometer.h"
 #include <Arduino.h>
 #include <U8g2lib.h>
@@ -12,7 +12,8 @@
 #include <map>
 #include <RotaryEncoder.h>
 #include "Settings.h"
-#include "PCF8574.h"
+//#include <WiFi.h>
+//#include <ArduinoOTA.h>
 
 /*
 -- I2C Adressen --
@@ -24,9 +25,15 @@
 
 // -- Screens --
 OledSpeedometer speedometer;
-LCDMenu lcdMenu;
 
 PCF8574 io_expander(0x20);
+LiquidCrystal_I2C _lcd(0x27, 20, 4);
+
+void ChangeMenu(int);
+void UpdateSpeedometerSettings();
+KettcarMenu _kettcarMenu(&_lcd, &io_expander);
+MainMenu _mainMenu(&_lcd, &io_expander, ChangeMenu);
+SettingsMenu _settingsMenu(&_lcd, ChangeMenu,UpdateSpeedometerSettings);
 
 // -- Rotary Encoder --
 RotaryEncoder rotaryEncoder(pin_rotaryA, pin_rotaryB);
@@ -43,27 +50,11 @@ int wirelessTimeoutDelay = 400; // Milliseconds
 
 // -- Changing --
 long lastRecievedTime;
-
 int buttonInput = 0; // 0 = no input, 1 = pressed, 2 = released
-
+long lastButtonInputTime = 0;
 int hallCount = 0;
-
-bool enableWireless = false;
-
-bool isInReverse = false;
-
-int pedalDeadzone = 0;
-
-int directThrottle;
-int wirelessThrottle;
+int currentThrottle;
 int wirelessSteer;
-int currentSteer;
-
-int maxPedalThrottle = 100;
-int maxRemoteThrottle = 10;
-
-int currentThrottle = 0;
-int currentSpeed = 0;
 
 // -- Header --
 void IRAM_ATTR HallInterrupt();
@@ -75,37 +66,59 @@ void IRAM_ATTR OnButtonPress();
 void setup()
 {
 	InitIO();
+	AttatchInterrupts();
 
 	delay(200);
 	Serial.begin(9600);
-	printf_begin();
+	Serial.println("Started...");
+
+	//printf_begin();
 
 	thermometers.begin();
 	
-	lcdMenu.init(OnMainMenuToggles);
+    _mainMenu.Init();
+	_kettcarMenu.Init(&_mainMenu, &_settingsMenu);
+	_settingsMenu.Init();
+	
 	speedometer.init();
 	
 	InitRadio();
 
-	Serial.print("Serial Expander Found:");
+	Serial.print("IO Expander Found:");
 	Serial.println(io_expander.isConnected());
-
-	Serial.println("Initialized");
-
-	//hallBaseLineReading = analogRead(pin_hallSensor);
-	currentThrottle = 0;
 
 	digitalWrite(pin_BatteryA, LOW);
 	digitalWrite(pin_BatteryB, LOW);
 	digitalWrite(pin_BatteryC, LOW);
+	
+	_settingsMenu.SetSettingValue(PedalDeadzoneSettingIndex, analogRead(pin_footPedal) + 50);
 
-	lcdMenu.AddSetttingsChangeListener(UpdateSpeedometerSettings, MaxSpeedSettingIndex);
-	lcdMenu.AddSetttingsChangeListener(UpdateSpeedometerSettings, SpeedometerGranularitySettingIndex);
-	lcdMenu.AddSetttingsChangeListener(UpdateMaxPedalThrottle, MaxPedalThrottleSettingIndex);
-	lcdMenu.AddSetttingsChangeListener(UpdateMaxRemoteThrottle, MaxRemoteThrottleSettingIndex);
-	lcdMenu.AddSetttingsChangeListener(UpdatePedalDeadzone, PedalDeadzoneSettingIndex);
+	Serial.print("PedalDeadzone:");
+	Serial.println(analogRead(pin_footPedal) + 50);
 
-	lcdMenu.SetSetting(PedalDeadzoneSettingIndex, analogRead(pin_footPedal) + 50);
+
+	_kettcarMenu.Draw();
+	
+	/*
+	WiFi.begin("PECS","Llap-3,141");
+	WiFi.setHostname("Ketcar");
+
+	ArduinoOTA.setHostname("Ketcar");
+	ArduinoOTA.begin();
+
+
+	ArduinoOTA.onStart([]()
+		{
+			_kettcarMenu.StartOTAUpdate();
+		});
+	
+	ArduinoOTA.onEnd([]()
+		{
+			_kettcarMenu.OTAUpdateFinished();
+		});
+		*/
+
+	Serial.println("Initialized");
 }
 
 void InitIO()
@@ -114,20 +127,23 @@ void InitIO()
 
 	pinMode(pin_rotaryA, INPUT_PULLUP); // Encoder
 	pinMode(pin_rotaryB, INPUT_PULLUP); // Encoder
-	attachInterrupt(pin_rotaryA, OnRotaryEncoder, CHANGE); // Encoder
-	attachInterrupt(pin_rotaryB, OnRotaryEncoder, CHANGE); // Encoder
 	
 	pinMode(pin_button, INPUT_PULLUP); // Button
-	attachInterrupt(pin_button, OnButtonPress, CHANGE); // Button
 
 	pinMode(pin_hallSensor, INPUT); // Hall Sensor
-	attachInterrupt(pin_hallSensor, HallInterrupt, FALLING); // Hall Sensor
 
 	pinMode(pin_footPedal, INPUT); // Foot Pedal
+	digitalWrite(pin_footPedal, LOW);
 
 	pinMode(pin_BatteryA, OUTPUT); // Battery A
 	pinMode(pin_BatteryB, OUTPUT); // Battery B
 	pinMode(pin_BatteryC, OUTPUT); // Battery C
+
+	pinMode(pin_throttle,OUTPUT); // Throttle
+	digitalWrite(pin_throttle, LOW);
+
+	pinMode(pin_voltSense, INPUT); // Voltage Sense
+	pinMode(pin_ampSense, INPUT); // Amperage Sense
 
 	io_expander.begin();
 
@@ -135,6 +151,14 @@ void InitIO()
 	io_expander.write(1, HIGH);
 	io_expander.write(2, HIGH);
 	io_expander.write(3, HIGH);
+}
+
+void AttatchInterrupts()
+{
+	attachInterrupt(pin_rotaryA, OnRotaryEncoder, CHANGE); // Encoder
+	attachInterrupt(pin_rotaryB, OnRotaryEncoder, CHANGE); // Encoder
+	attachInterrupt(pin_button, OnButtonPress, CHANGE); // Button
+	attachInterrupt(pin_hallSensor, HallInterrupt, FALLING); // Hall Sensor
 }
 
 void InitRadio()
@@ -146,63 +170,25 @@ void InitRadio()
 
 	radio.openReadingPipe(0, address);
 	//radio.printDetails();
-	radio.stopListening();
+	//radio.stopListening();
+	radio.startListening();
 }
 #pragma endregion
 
 #pragma region Events
 
-void OnMainMenuToggles(int value, int index) {
-	switch (index)
-	{
-	case 0: // Reverse Tempomat
-		if (currentSpeed == 0)
-		{
-			isInReverse = !isInReverse;
-			lcdMenu.SetReverse(isInReverse);
-			io_expander.write(0, isInReverse ? LOW:HIGH);
-		}
-		break;
-	case 1: // Wireless
-		if (enableWireless)
-		{
-			// Disable Wireless. Allways Possible
-			enableWireless = false;
-			lcdMenu.SetWirelessSignal(enableWireless, false);
-			radio.stopListening();
-		}
-		else
-		{
-			// Enable Wireless. Only when standing still
-			if (currentSpeed == 0)
-			{
-				enableWireless = true;
-				lcdMenu.SetWirelessSignal(enableWireless, false);
-				radio.startListening();
-			}
-		}
-		break;
-	}
+void OTAUpdateStart() {
+
 }
 
-void UpdatePedalDeadzone(int value, int index)
+void UpdateSpeedometerSettings()
 {
-	pedalDeadzone = value;
+	speedometer.UpdateSettings(_settingsMenu.GetSettingValue(MaxSpeedSettingIndex), _settingsMenu.GetSettingValue(SpeedometerGranularitySettingIndex));
 }
 
-void UpdateSpeedometerSettings(int value, int index)
+void ChangeMenu(int newMenu)
 {
-	speedometer.UpdateSettings(value, index);
-}
-
-void UpdateMaxPedalThrottle(int value, int index)
-{
-	maxPedalThrottle = value;
-}
-
-void UpdateMaxRemoteThrottle(int value, int index)
-{
-	maxRemoteThrottle = value;
+	_kettcarMenu.SetMenu(newMenu);
 }
 
 void IRAM_ATTR HallInterrupt()
@@ -231,7 +217,7 @@ void IRAM_ATTR OnButtonPress()
 
 void UpdateSteer()
 {
-	currentSteer = map(analogRead(pin_steerPotiA), 0, 4095, 0, 100);
+	int currentSteer = map(analogRead(pin_steerPotiA), 0, 4095, 0, 100);
 	int diff = currentSteer - wirelessSteer;
 	
 	//lcdMenu.DisplayDebugValue(((String)diff) + "  ");
@@ -257,27 +243,31 @@ void loop(void)
 {
 	int executionTime = millis();
 	
-	int directThrottle = max((int)map(analogRead(pin_footPedal), pedalDeadzone, 4095, 0, maxPedalThrottle),0);
+	int directThrottle = max((int)map(analogRead(pin_footPedal), _settingsMenu.GetSettingValue(PedalDeadzoneSettingIndex), 4095, 0, _settingsMenu.GetSettingValue(MaxPedalThrottleSettingIndex)), 0);
+	
+	//_mainMenu.drawDebugText(String(analogRead(pin_footPedal)));
+	//Serial.println(directThrottle);
 
-	if (enableWireless)
+	if (_mainMenu.GetWirelessEnabled())
 	{
 		if (radio.available(0))
 		{
 			lastRecievedTime = millis();
 			int values[2];
 			radio.read(&values, sizeof(values));
-			wirelessThrottle = values[0];
-			wirelessSteer = values[1];
-			lcdMenu.SetWirelessSignal(enableWireless, true);
+			int wirelessThrottle = values[0];
+			int wirelessSteer = values[1];
+			_mainMenu.SetWirelessSignal(true);
+			//Serial.println(wirelessSteer);
 
 			if (directThrottle == 0) // Only use wireless Value when foot pedal is not pressed
 			{
-				currentThrottle = map(wirelessThrottle, 0, 100, 0, maxRemoteThrottle);
+				currentThrottle = map(wirelessThrottle, 0, 100, 0, _settingsMenu.GetSettingValue(MaxRemoteThrottleSettingIndex));
 			}
 		}else if (millis() > lastRecievedTime + wirelessTimeoutDelay) // wireless timeout 
 		{
 			currentThrottle = 0;
-			lcdMenu.SetWirelessSignal(enableWireless,false);
+			_mainMenu.SetWirelessSignal(false);
 		}
 
 		UpdateSteer();
@@ -289,19 +279,31 @@ void loop(void)
 	
 	if (rotaryEncoder.getPosition() != 0)
 	{
-		lcdMenu.RotaryInput(rotaryEncoder.getPosition());
+		_kettcarMenu.OnScroll(rotaryEncoder.getPosition());
+		Serial.print("OnEncodeScroll:");
+		Serial.println(rotaryEncoder.getPosition());
 		rotaryEncoder.setPosition(0);
 	}
 
-	if (buttonInput)
+	if (buttonInput == 1 && millis() - lastButtonInputTime > 200)
 	{
-		lcdMenu.ButtonPress(buttonInput);
+		lastButtonInputTime = millis();
+		_kettcarMenu.OnClick();
 		buttonInput = 0;
+		Serial.println("OnButtonPress");
 	}
 
-	currentSpeed = currentThrottle; // TODO.... Hall Reading Magic
-	lcdMenu.SetSpeed(currentSpeed);
+	int currentSpeed = currentThrottle; // TODO.... Hall Reading Magic
+	
 	speedometer.Update(currentSpeed);
 	
-	lcdMenu.WriteExecutionTime(millis() - executionTime);
+	_mainMenu.UpdateCurrentSpeed(currentSpeed);
+
+	//lcdMenu.WriteExecutionTime(millis() - executionTime);
+
+	digitalWrite(pin_BatteryA, currentSpeed > 30);
+	digitalWrite(pin_BatteryB, currentSpeed > 60);
+	digitalWrite(pin_BatteryC, currentSpeed > 90);
+
+	//ArduinoOTA.handle();
 }

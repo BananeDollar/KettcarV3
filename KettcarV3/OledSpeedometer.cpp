@@ -34,17 +34,10 @@ void OledSpeedometer::EnableTimeout(bool enableTimeout)
 	_timeoutCountdown = 0;
 }
 
-void OledSpeedometer::UpdateSettings(int value, int index)
+void OledSpeedometer::UpdateSettings(int maxSpeed, int granularity)
 {
-	switch (index)
-	{
-	case MaxSpeedSettingIndex:
-		_maxSpeed = value;
-		break;
-	case SpeedometerGranularitySettingIndex:
-		_granularity = value;
-		break;
-	}
+	_maxSpeed = maxSpeed;
+	_granularity = granularity;
 	_timeoutCountdown = 0;
 	Update(_lastSpeed,true);
 }

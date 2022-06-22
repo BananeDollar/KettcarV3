@@ -21,7 +21,16 @@
     <ClCompile Include="OledSpeedometer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="LCDMenu.cpp">
+    <ClCompile Include="SettingsMenu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KetcarMenu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MainMenu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MenuType.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -29,10 +38,19 @@
     <ClInclude Include="OledSpeedometer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LCDMenu.h">
+    <ClInclude Include="Settings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Settings.h">
+    <ClInclude Include="KetcarMenu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MainMenu.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MenuType.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SettingsMenu.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
