@@ -19,12 +19,14 @@ protected:
 	float _timeoutCountdown;
 	int _maxSpeed = 100;
 	int _granularity = 10;
+	float temperatures[2];
 public:
 	OledSpeedometer();
 	void init();
 	void EnableTimeout(bool);
 	void UpdateSettings(int, int);
 	void Update(int currentSpeed, bool forceUpdate=false);
+	void SetTemperatures(float[]);
 };
 
 #endif
