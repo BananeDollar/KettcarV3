@@ -10,26 +10,26 @@
 #define pin_footPedal 4
 
 //Throttle
-#define pin_throttle 0
+//#define pin_throttle 0
 
 //Hall Sensor
 #define pin_hallSensor 5
 
 // Battery Relays
-#define pin_BatteryA 12
-#define pin_BatteryB 13
-#define pin_BatteryC 14
+#define pin_BatteryA 25
+#define pin_BatteryB 26
+#define pin_BatteryC 27
 
 // Thermometer
-#define pin_thermometer 2
+#define pin_thermometer 16
 
 // Steer poti
-#define pin_steerPotiA 26
-#define pin_steerPotiB 27
+//#define pin_steerPotiA 26
+//#define pin_steerPotiB 27
 
 // Power Messure
-#define pin_voltSense 32
-#define pin_ampSense 33
+//#define pin_voltSense 32
+//#define pin_ampSense 33
 
 // Settings Intex
 #define settingsCount 5

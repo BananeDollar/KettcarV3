@@ -96,6 +96,20 @@ void OledSpeedometer::Update(int currentSpeed, bool forceUpdate) // - 128 x 64
 			_oled.println(i * int(((float)_maxSpeed) / ((float)_granularity)));
 		}
 
+		// Temperature
+		_oled.setCursor(0, 0);
+		_oled.println(String(temperatures[0]));
+		_oled.setCursor(0, 10);
+		_oled.println("Amb");
+
+		_oled.setCursor(150, 0);
+		_oled.println(String(temperatures[1]));
+		_oled.setCursor(100, 10);
+		_oled.println("Mot");
+		
+		//_oled.setCursor(20, 2);
+		//_oled.println("Temp: " + String(temperatures[1]));
+
 		// Current Speed Text
 		_oled.setTextSize(3);
 		int displaySpeed = map(currentSpeed, 0, 100, 0, _maxSpeed);
@@ -112,4 +126,10 @@ void OledSpeedometer::Update(int currentSpeed, bool forceUpdate) // - 128 x 64
 		// Send to Oled
 		_oled.display();
 	}
+}
+
+void OledSpeedometer::SetTemperatures(float values[])
+{
+	temperatures[0] = values[0];
+	temperatures[1] = values[1];
 }
