@@ -12,6 +12,8 @@
 //Throttle
 //#define pin_throttle 0
 
+#define pin_steerServo 2
+
 //Hall Sensor
 #define pin_hallSensor 5
 
@@ -28,8 +30,10 @@
 //#define pin_steerPotiB 27
 
 // Power Messure
-//#define pin_voltSense 32
-//#define pin_ampSense 33
+#define pin_voltMessure 35
+//#define pin_ampMessure 33
+
+#define voltageBufferLength 10
 
 // Settings Intex
 #define settingsCount 5
