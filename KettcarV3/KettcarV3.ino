@@ -399,6 +399,12 @@ void loop(void)
 
 	//ArduinoOTA.handle();
 
+	if (hallCount > 0)
+	{
+		Serial.println(hallCount);
+		//hallCount = 0;
+	}
+
 	//_mainMenu.drawDebugText(String(millis() - executionTime));
 	_mainMenu.drawDebugText(String(currentBatteryVoltage) + "V");
 }
