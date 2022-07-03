@@ -43,7 +43,7 @@ SettingsMenu _settingsMenu(&_lcd, ChangeMenu,UpdateSpeedometerSettings);
 RotaryEncoder rotaryEncoder(pin_rotaryA, pin_rotaryB);
 
 // -- RF24 - Radio --
-RF24 radio(0, 17); // CE, CSN Radio
+RF24 radio(16,17); // CE, CSN Radio
 const byte address[6] = "RMCMD";
 
 OneWire oneWire(pin_thermometer);
@@ -56,6 +56,7 @@ const int wirelessTimeoutDelay = 400; // Milliseconds
 const bool SerialDebugButtonPress = false;
 const bool SerialDebugInit = false;
 const int tmeperaturUpdateDelay = 2000;
+const int voltageBufferLength = 10;
 
 const int vd_R1 = 1000000;  // Vin -> R1 -> ESP32 -> R2 -> GND
 const int vd_R2 = 46800;
@@ -90,6 +91,9 @@ void InitDebugPrint()
 	Serial.print("I2C Freq:");
 	Serial.println(Wire.getClock());
 	
+	Serial.print("Thermometers:");
+	Serial.println(thermometers.getDeviceCount());
+
 	Serial.println("Initialized");
 }
 
@@ -130,17 +134,20 @@ void InitIO()
 	pinMode(pin_BatteryA, OUTPUT); // Battery A
 	pinMode(pin_BatteryB, OUTPUT); // Battery B
 	pinMode(pin_BatteryC, OUTPUT); // Battery C
+	pinMode(pin_PowerSwitch, OUTPUT); // Power Switch
 
 	digitalWrite(pin_BatteryA, LOW);
 	digitalWrite(pin_BatteryB, LOW);
 	digitalWrite(pin_BatteryC, LOW);
+	digitalWrite(pin_PowerSwitch, LOW);
 
-	steerServo.attach(2);
+	steerServo.attach(pin_steerServo);
 
-	//pinMode(pin_throttle,OUTPUT); // Throttle
-	//digitalWrite(pin_throttle, LOW);
+	pinMode(pin_throttle,OUTPUT); // Throttle
+	digitalWrite(pin_throttle, LOW);
 
-	pinMode(pin_voltMessure, INPUT); // Voltage Sense
+	pinMode(pin_voltMessureA, INPUT); // Voltage Sense
+	pinMode(pin_voltMessureB, INPUT); // Voltage Sense
 	//pinMode(pin_ampMessure, INPUT); // Amperage Sense
 
 	io_expander.begin();
@@ -208,10 +215,7 @@ void setup()
 
 	steerServo.write(90);
 
-	if (SerialDebugInit)
-	{
-		InitDebugPrint();
-	}
+	InitDebugPrint();
 }
 #pragma endregion
 
@@ -353,7 +357,7 @@ void UpdateVoltage()
 		voltageBufferIndex = 0;
 
 	// fill Buffer at current index
-	voltageBuffer[voltageBufferIndex] = analogRead(pin_voltMessure);
+	voltageBuffer[voltageBufferIndex] = analogRead(pin_voltMessureA);
 	
 	// calculate median of last 10 analog Reads
 	float bufferMedian = 0;
@@ -372,7 +376,9 @@ void UpdateVoltage()
 void loop(void)
 {
 	int executionTime = millis();
-	int directThrottle = max((int)map(analogRead(pin_footPedal), _settingsMenu.GetSettingValue(PedalDeadzoneSettingIndex), 4095, 0, _settingsMenu.GetSettingValue(MaxPedalThrottleSettingIndex)), 0);
+	int pedalInput = max((int)map(analogRead(pin_footPedal), _settingsMenu.GetSettingValue(PedalDeadzoneSettingIndex), 4095, 0, _settingsMenu.GetSettingValue(MaxPedalThrottleSettingIndex)), 0);
+	int directThrottle = (1.0 / (1.0 + exp(-((pedalInput - 50.0) / 8.0))))*100.0;
+	
 
 	if (_mainMenu.GetWirelessEnabled() && directThrottle == 0)
 	{
@@ -390,20 +396,16 @@ void loop(void)
 	int currentSpeed = currentThrottle; // TODO.... Hall Reading Magic
 	
 	speedometer.Update(currentSpeed);
-	
 	_mainMenu.UpdateCurrentSpeed(currentSpeed);
 
 	digitalWrite(pin_BatteryA, currentSpeed > 30);
 	digitalWrite(pin_BatteryB, currentSpeed > 60);
 	digitalWrite(pin_BatteryC, currentSpeed > 90);
+	digitalWrite(pin_PowerSwitch, currentSpeed == 0);
 
-	//ArduinoOTA.handle();
-
-	if (hallCount > 0)
-	{
-		Serial.println(hallCount);
-		//hallCount = 0;
-	}
+	steerServo.write(map(currentThrottle, 0, 100, 0, 180));
+	
+	analogWrite(pin_throttle,map(currentThrottle, 0, 100, 0, 255));
 
 	//_mainMenu.drawDebugText(String(millis() - executionTime));
 	_mainMenu.drawDebugText(String(currentBatteryVoltage) + "V");
