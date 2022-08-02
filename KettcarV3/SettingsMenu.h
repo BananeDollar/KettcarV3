@@ -15,7 +15,7 @@ private:
 	bool _isEdditingValue;
 	void SaveSettings();
 public:
-	SettingsMenu(LiquidCrystal_I2C* lcd, IntCallback, SimpleCallback);
+	SettingsMenu(LiquidCrystal_I2C* lcd, IntCallback, SimpleCallback, int* menulevel);
 	void Draw();
 	void Init();
 	void OnScroll(int cursorChange);

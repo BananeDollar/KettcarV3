@@ -21,18 +21,16 @@ private:
 	LiquidCrystal_I2C* _lcd;
 	PCF8574* _ioExpander;
 	int _cursorPosition = 0;
-	int _currentMenu;
 	int _currentSpeed;
 	MenuType* _subMenus[2];
 public:
+	int _currentMenu;
 	KettcarMenu(LiquidCrystal_I2C*, PCF8574*);
 	void Init(MenuType*, MenuType*);
 	void Draw();
 	void OnScroll(int cursorChange);
 	void OnClick();
 	void SetMenu(int);
-	void StartOTAUpdate();
-	void OTAUpdateFinished();
 };
 
 extern KettcarMenu KetcarMenu;

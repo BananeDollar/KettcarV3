@@ -20,29 +20,34 @@ byte downArrow[8] = {
   B00100,
   B00000
 };
-byte cogWheel[8] = {
+byte wrench[8] = {
   B00000,
-  B10101,
+  B01010,
+  B01010,
   B01110,
-  B11011,
-  B01110,
-  B10101,
-  B00000,
+  B00100,
+  B00100,
+  B00100,
   B00000
 };
 
 // https://www.pixilart.com/draw
 
-MainMenu::MainMenu(LiquidCrystal_I2C* lcd, PCF8574* io_expander, IntCallback menuChangeRequest) : MenuType(lcd, menuChangeRequest)
+MainMenu::MainMenu(LiquidCrystal_I2C* lcd, IntCallback menuChangeRequest, BoolCallback setReverse, int* menuLevel) : MenuType(lcd, menuChangeRequest, menuLevel)
 {
 	_maxCursorPosition = 3;
-	_ioExpander = io_expander;
+	_setReverse = setReverse;
 }
 
 void MainMenu::Init()
 {
+	_lcd->init();
+	_lcd->backlight();
+	
 	_lcd->createChar(0, upArrow);
 	_lcd->createChar(1, downArrow);
+	_lcd->createChar(2, wrench);
+	_lcd->clear();
 }
 
 void MainMenu::Draw()
@@ -52,6 +57,8 @@ void MainMenu::Draw()
 	DrawWirelessStatus();
 	_lcd->setCursor(0,3);
 	_lcd->print("Einstellungen");
+	_lcd->setCursor(15, 3);
+	_lcd->write((uint8_t)2);
 	DrawCursor(); //Draw start cursor
 }
 
@@ -64,12 +71,16 @@ void MainMenu::OnClick()
 {
 	switch (GetCursorPosition())
 	{
-	case 0: // Reverse Tempomat
+	case 0: // Reverse
 		if (_currentSpeed == 0)
 		{
 			_reverse = !_reverse;
 			DrawDirectionText();
-			_ioExpander->write(0, _reverse ? LOW : HIGH);
+			_setReverse(_reverse);
+		}
+		else // Tempomat
+		{
+		
 		}
 		break;
 	case 1: // Wireless
@@ -115,8 +126,11 @@ void MainMenu::UpdateCurrentSpeed(int speed)
 
 void MainMenu::drawDebugText(String text)
 {
-	_lcd->setCursor(0, 2);
-	_lcd->print(text + "  ");
+	if (*_currentMenuLevel == 0)
+	{
+		_lcd->setCursor(0, 2);
+		_lcd->print(text + "  ");
+	}
 }
 
 void MainMenu::DrawDirectionText()
@@ -125,33 +139,36 @@ void MainMenu::DrawDirectionText()
 	if (_reverse)
 	{
 		_lcd->print("R\xF5\ckw\xE1rts ");
-		_lcd->setCursor(10,0);
-		_lcd->write(byte(1));
+		_lcd->setCursor(15,0);
+		_lcd->write((uint8_t)1);
 	}
 	else
 	{
 		_lcd->print("Vorw\xE1rts ");
-		_lcd->setCursor(10, 0);
-		_lcd->write(byte(0));
+		_lcd->setCursor(15, 0);
+		_lcd->write((uint8_t)0);
 	}
 }
 
 void MainMenu::DrawWirelessStatus()
 {
-	_lcd->setCursor(0, 1);
-	if (!_wirelessEnabled)
+	if (*_currentMenuLevel == 0)
 	{
-		_lcd->print("Manual    ");
-	}
-	else
-	{
-		if (_wirelessSignal)
+		_lcd->setCursor(0, 1);
+		if (!_wirelessEnabled)
 		{
-			_lcd->print("- REMOTE -");
+			_lcd->print("Manual    ");
 		}
 		else
 		{
-			_lcd->print("NO  SIGNAL");
+			if (_wirelessSignal)
+			{
+				_lcd->print("- REMOTE -");
+			}
+			else
+			{
+				_lcd->print("NO  SIGNAL");
+			}
 		}
 	}
 }

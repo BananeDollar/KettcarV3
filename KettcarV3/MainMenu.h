@@ -7,11 +7,11 @@ private:
 	bool _wirelessEnabled;
 	bool _wirelessSignal;
 	int _currentSpeed;
-	PCF8574* _ioExpander;
+	BoolCallback _setReverse;
 	void DrawDirectionText();
 	void DrawWirelessStatus();
 public:
-	MainMenu(LiquidCrystal_I2C*, PCF8574*, IntCallback);
+	MainMenu(LiquidCrystal_I2C*, IntCallback, BoolCallback, int* menuLevel);
 	void Init();
 	void Draw();
 	void OnScroll(int cursorChange);

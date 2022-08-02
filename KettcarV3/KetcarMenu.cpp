@@ -12,11 +12,6 @@ void KettcarMenu::Init(MenuType* a, MenuType* b)
 	
 	_subMenus[0] = a;
 	_subMenus[1] = b;
-	
-	_lcd->init();
-	_lcd->backlight();
-	_lcd->clear();
-	_lcd->println("Started");
 
 	_currentMenu = 0;
 }
@@ -41,20 +36,4 @@ void KettcarMenu::SetMenu(int newMenu)
 {
 	_currentMenu = newMenu;
 	Draw();
-}
-
-void KettcarMenu::StartOTAUpdate()
-{
-	// Clear lcd and write the text "OTA-Update Started" in the second row
-	_lcd->clear();
-	_lcd->setCursor(0, 1);
-	_lcd->print("OTA-Update Started");
-}
-
-void KettcarMenu::OTAUpdateFinished()
-{
-	// the same as StartOTAUpdate but the Text is "Rebooting..."
-	_lcd->clear();
-	_lcd->setCursor(0, 1);
-	_lcd->print("Rebooting...");
 }

@@ -35,9 +35,10 @@ LiquidCrystal_I2C _lcd(0x27, 20, 4);
 
 void ChangeMenu(int);
 void UpdateSpeedometerSettings();
+void SetReverse(bool);
 KettcarMenu _kettcarMenu(&_lcd, &io_expander);
-MainMenu _mainMenu(&_lcd, &io_expander, ChangeMenu);
-SettingsMenu _settingsMenu(&_lcd, ChangeMenu,UpdateSpeedometerSettings);
+MainMenu _mainMenu(&_lcd, ChangeMenu, SetReverse , &_kettcarMenu._currentMenu);
+SettingsMenu _settingsMenu(&_lcd, ChangeMenu,UpdateSpeedometerSettings, &_kettcarMenu._currentMenu);
 
 // -- Rotary Encoder --
 RotaryEncoder rotaryEncoder(pin_rotaryA, pin_rotaryB);
@@ -195,6 +196,7 @@ void setup()
 	thermometers.setWaitForConversion(false);
 	lastTemperatureUpdateMillis = -tmeperaturUpdateDelay; // to force update on startup
 
+	delay(200);
 	_mainMenu.Init();
 	delay(200);
 	_kettcarMenu.Init(&_mainMenu, &_settingsMenu);
@@ -221,8 +223,10 @@ void setup()
 
 #pragma region Events
 
-void OTAUpdateStart() {
-
+void SetReverse(bool reverse)
+{
+	io_expander.write(0, reverse);
+	speedometer.SetReverse(reverse);
 }
 
 void UpdateSpeedometerSettings()
@@ -344,7 +348,6 @@ void UpdateTemperature()
 		{
 			temperatures[i] = thermometers.getTempCByIndex(i);
 		}
-		speedometer.SetTemperatures(temperatures);
 	}
 }
 
@@ -390,7 +393,7 @@ void loop(void)
 	}
 	
 	UpdateMenuControlls();
-	UpdateTemperature();
+	//UpdateTemperature();
 	UpdateVoltage();
 
 	int currentSpeed = currentThrottle; // TODO.... Hall Reading Magic

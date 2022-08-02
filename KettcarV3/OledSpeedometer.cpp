@@ -42,6 +42,11 @@ void OledSpeedometer::UpdateSettings(int maxSpeed, int granularity)
 	Update(_lastSpeed,true);
 }
 
+void OledSpeedometer::SetReverse(bool reverse)
+{
+	
+}
+
 void OledSpeedometer::Update(int currentSpeed, bool forceUpdate) // - 128 x 64
 {
 	if (_enableTimeout)
@@ -95,17 +100,6 @@ void OledSpeedometer::Update(int currentSpeed, bool forceUpdate) // - 128 x 64
 			// Value
 			_oled.println(i * int(((float)_maxSpeed) / ((float)_granularity)));
 		}
-
-		// Temperature
-		_oled.setCursor(0, 0);
-		_oled.println(String(temperatures[0]));
-		_oled.setCursor(0, 10);
-		_oled.println("Amb");
-
-		_oled.setCursor(150, 0);
-		_oled.println(String(temperatures[1]));
-		_oled.setCursor(100, 10);
-		_oled.println("Mot");
 		
 		//_oled.setCursor(20, 2);
 		//_oled.println("Temp: " + String(temperatures[1]));
@@ -126,10 +120,4 @@ void OledSpeedometer::Update(int currentSpeed, bool forceUpdate) // - 128 x 64
 		// Send to Oled
 		_oled.display();
 	}
-}
-
-void OledSpeedometer::SetTemperatures(float values[])
-{
-	temperatures[0] = values[0];
-	temperatures[1] = values[1];
 }

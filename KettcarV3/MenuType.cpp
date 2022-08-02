@@ -53,10 +53,11 @@ int MenuType::GetCurrentScroll()
 	return _currentScroll;
 }
 
-MenuType::MenuType(LiquidCrystal_I2C* lcd, IntCallback menuChangeRequest)
+MenuType::MenuType(LiquidCrystal_I2C* lcd, IntCallback menuChangeRequest, int* menuLevel)
 {
 	_lcd = lcd;
 	_menuChangeRequest = menuChangeRequest;
+	_currentMenuLevel = menuLevel;
 }
 
 void MenuType::Draw()

@@ -4,6 +4,7 @@
 #include "Settings.h"
 
 typedef void (*IntCallback)(int newMenu);
+typedef void (*BoolCallback)(bool value);
 typedef void (*SimpleCallback)();
 
 class MenuType
@@ -12,6 +13,7 @@ private:
 	int _currentCursorPosition;
 	int _currentScroll;
 protected:
+	int* _currentMenuLevel;
 	int _maxCursorPosition;
 	LiquidCrystal_I2C* _lcd;
 	void MoveCursor(int);
@@ -20,7 +22,7 @@ protected:
 	IntCallback _menuChangeRequest;
 	void DrawCursor();
 public:
-	MenuType(LiquidCrystal_I2C*, IntCallback);
+	MenuType(LiquidCrystal_I2C*, IntCallback, int*);
 	virtual void Draw();
 	virtual void OnScroll(int cursorChange);
 	virtual void OnClick();

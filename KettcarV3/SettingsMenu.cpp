@@ -1,9 +1,8 @@
 #include "SettingsMenu.h"
 
-SettingsMenu::SettingsMenu(LiquidCrystal_I2C* lcd, IntCallback menuChangeRequest, SimpleCallback oledUpdate) : MenuType(lcd, menuChangeRequest)
+SettingsMenu::SettingsMenu(LiquidCrystal_I2C* lcd, IntCallback menuChangeRequest, SimpleCallback oledUpdate, int* menuLevel) : MenuType(lcd, menuChangeRequest, menuLevel)
 {
 	_oledUpdate = oledUpdate;
-
 	_maxCursorPosition = settingsCount;
 }
 
@@ -41,6 +40,8 @@ void SettingsMenu::Init()
 	_settingsValues[MaxPedalThrottleSettingIndex] = EEPROM.read(4);
 	//_settingsValues[PedalDeadzoneSettingIndex] = 50; // Set by Main ino File
 	_settingsValues[MaxRemoteThrottleSettingIndex] = EEPROM.read(6);
+
+	_oledUpdate();
 }
 
 void SettingsMenu::OnScroll(int cursorChange)
