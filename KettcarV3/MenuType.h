@@ -12,6 +12,7 @@ class MenuType
 private:
 	int _currentCursorPosition;
 	int _currentScroll;
+	int _myMenuIndex = 0;
 protected:
 	int* _currentMenuLevel;
 	int _maxCursorPosition;
@@ -21,9 +22,12 @@ protected:
 	int GetCurrentScroll();
 	IntCallback _menuChangeRequest;
 	void DrawCursor();
+	bool isOpen();
 public:
-	MenuType(LiquidCrystal_I2C*, IntCallback, int*);
+	MenuType(LiquidCrystal_I2C* lcd, IntCallback menuChangeRequest, int* currentMenuLevel);
+	virtual void Init();
 	virtual void Draw();
 	virtual void OnScroll(int cursorChange);
 	virtual void OnClick();
+	void SetMenuIndex(int index);
 };

@@ -43,6 +43,15 @@ void MenuType::DrawCursor()
 	_lcd->print("<");
 }
 
+/// <summary>
+/// Check if this Menu is currently open
+/// </summary>
+/// <returns>open</returns>
+bool MenuType::isOpen()
+{
+	return (*_currentMenuLevel == _myMenuIndex);
+}
+
 int MenuType::GetCursorPosition()
 {
 	return _currentCursorPosition;
@@ -58,6 +67,11 @@ MenuType::MenuType(LiquidCrystal_I2C* lcd, IntCallback menuChangeRequest, int* m
 	_lcd = lcd;
 	_menuChangeRequest = menuChangeRequest;
 	_currentMenuLevel = menuLevel;
+	
+}
+
+void MenuType::Init()
+{
 }
 
 void MenuType::Draw()
@@ -70,4 +84,9 @@ void MenuType::OnScroll(int cursorChange)
 
 void MenuType::OnClick()
 {
+}
+
+void MenuType::SetMenuIndex(int index)
+{
+	_myMenuIndex = index;
 }

@@ -55,10 +55,13 @@ void MainMenu::Draw()
 	_lcd->clear();
 	DrawDirectionText();
 	DrawWirelessStatus();
-	_lcd->setCursor(0,3);
+	_lcd->setCursor(0, 2);
+	_lcd->print("Power");
+	_lcd->setCursor(0, 3);
 	_lcd->print("Einstellungen");
 	_lcd->setCursor(15, 3);
 	_lcd->write((uint8_t)2);
+	
 	DrawCursor(); //Draw start cursor
 }
 
@@ -99,6 +102,9 @@ void MainMenu::OnClick()
 		}
 		DrawWirelessStatus();
 		break;
+	case 2:
+		_menuChangeRequest(2);
+		break;
 	case 3: // Settings
 		_menuChangeRequest(1);
 		break;
@@ -126,7 +132,7 @@ void MainMenu::UpdateCurrentSpeed(int speed)
 
 void MainMenu::drawDebugText(String text)
 {
-	if (*_currentMenuLevel == 0)
+	if (isOpen())
 	{
 		_lcd->setCursor(0, 2);
 		_lcd->print(text + "  ");
@@ -152,7 +158,7 @@ void MainMenu::DrawDirectionText()
 
 void MainMenu::DrawWirelessStatus()
 {
-	if (*_currentMenuLevel == 0)
+	if (isOpen())
 	{
 		_lcd->setCursor(0, 1);
 		if (!_wirelessEnabled)

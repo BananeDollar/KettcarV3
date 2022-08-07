@@ -1,3 +1,5 @@
+#include "VoltageReader.h"
+#include "PowerMenu.h"
 #include <ESP32Tone.h>
 #include <ESP32PWM.h>
 #include <analogWrite.h>
@@ -39,6 +41,7 @@ void SetReverse(bool);
 KettcarMenu _kettcarMenu(&_lcd, &io_expander);
 MainMenu _mainMenu(&_lcd, ChangeMenu, SetReverse , &_kettcarMenu._currentMenu);
 SettingsMenu _settingsMenu(&_lcd, ChangeMenu,UpdateSpeedometerSettings, &_kettcarMenu._currentMenu);
+PowerMenu _powerMenu(&_lcd, ChangeMenu, &_kettcarMenu._currentMenu);
 
 // -- Rotary Encoder --
 RotaryEncoder rotaryEncoder(pin_rotaryA, pin_rotaryB);
@@ -52,15 +55,16 @@ DallasTemperature thermometers(&oneWire);
 
 Servo steerServo;
 
+// -- Voltage Readers --
+
+VoltageReader _lowVoltageReader(pin_voltMessureA, 900000, 220000, 5); // 1000000 - 220000
+VoltageReader _highVoltageReader(pin_voltMessureB, 1000000, 44000, 5); // 1000000 - 47000
+
 // -- Settings --
 const int wirelessTimeoutDelay = 400; // Milliseconds
 const bool SerialDebugButtonPress = false;
 const bool SerialDebugInit = false;
 const int tmeperaturUpdateDelay = 2000;
-const int voltageBufferLength = 10;
-
-const int vd_R1 = 1000000;  // Vin -> R1 -> ESP32 -> R2 -> GND
-const int vd_R2 = 46800;
 
 // -- Changing --
 long lastRecievedTime;
@@ -70,9 +74,6 @@ int hallCount = 0;
 int currentThrottle = 0;
 int wirelessSteer;
 float lastTemperatureUpdateMillis;
-float currentBatteryVoltage;
-float voltageBuffer[voltageBufferLength];
-int voltageBufferIndex;
 
 // -- Header --
 void IRAM_ATTR HallInterrupt();
@@ -196,13 +197,9 @@ void setup()
 	thermometers.setWaitForConversion(false);
 	lastTemperatureUpdateMillis = -tmeperaturUpdateDelay; // to force update on startup
 
-	delay(200);
-	_mainMenu.Init();
-	delay(200);
-	_kettcarMenu.Init(&_mainMenu, &_settingsMenu);
-	delay(200);
-	_settingsMenu.Init();
-	delay(200);
+	MenuType* menus[] = {&_mainMenu , &_settingsMenu, &_powerMenu};
+	_kettcarMenu.Init(menus);
+	
 	speedometer.init();
 
 	InitRadio();
@@ -353,27 +350,9 @@ void UpdateTemperature()
 
 void UpdateVoltage()
 {
-	// update Buffer Index
-	if (voltageBufferIndex < voltageBufferLength)
-		voltageBufferIndex++;
-	else
-		voltageBufferIndex = 0;
-
-	// fill Buffer at current index
-	voltageBuffer[voltageBufferIndex] = analogRead(pin_voltMessureA);
-	
-	// calculate median of last 10 analog Reads
-	float bufferMedian = 0;
-	for (int i = 0; i < voltageBufferLength; i++)
-	{
-		bufferMedian += voltageBuffer[i];
-	}
-
-	// calulate voltage at pin using bufferMedian
-	float pinVoltage = (bufferMedian/ 10.0) * (3.0 / 4095.0);
-
-	// calucate input Voltage with Voltage Devider
-	currentBatteryVoltage = pinVoltage * ((vd_R1 + vd_R2) / vd_R2);
+	_lowVoltageReader.Update();
+	_highVoltageReader.Update();
+	_powerMenu.UpdateVoltage(_lowVoltageReader.GetVoltage(), _highVoltageReader.GetVoltage());
 }
 
 void loop(void)
@@ -411,5 +390,4 @@ void loop(void)
 	analogWrite(pin_throttle,map(currentThrottle, 0, 100, 0, 255));
 
 	//_mainMenu.drawDebugText(String(millis() - executionTime));
-	_mainMenu.drawDebugText(String(currentBatteryVoltage) + "V");
 }

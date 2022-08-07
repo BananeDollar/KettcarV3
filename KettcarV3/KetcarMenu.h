@@ -22,11 +22,11 @@ private:
 	PCF8574* _ioExpander;
 	int _cursorPosition = 0;
 	int _currentSpeed;
-	MenuType* _subMenus[2];
+	MenuType* _subMenus[4];
 public:
 	int _currentMenu;
 	KettcarMenu(LiquidCrystal_I2C*, PCF8574*);
-	void Init(MenuType*, MenuType*);
+	void Init(MenuType*[]);
 	void Draw();
 	void OnScroll(int cursorChange);
 	void OnClick();
