@@ -361,7 +361,6 @@ void loop(void)
 	int pedalInput = max((int)map(analogRead(pin_footPedal), _settingsMenu.GetSettingValue(PedalDeadzoneSettingIndex), 4095, 0, _settingsMenu.GetSettingValue(MaxPedalThrottleSettingIndex)), 0);
 	int directThrottle = (1.0 / (1.0 + exp(-((pedalInput - 50.0) / 8.0))))*100.0;
 	
-
 	if (_mainMenu.GetWirelessEnabled() && directThrottle == 0)
 	{
 		currentThrottle = UpdateWireless(); // returns wireless throttle
@@ -379,12 +378,7 @@ void loop(void)
 	
 	speedometer.Update(currentSpeed);
 	_mainMenu.UpdateCurrentSpeed(currentSpeed);
-
-	digitalWrite(pin_BatteryA, currentSpeed > 30);
-	digitalWrite(pin_BatteryB, currentSpeed > 60);
-	digitalWrite(pin_BatteryC, currentSpeed > 90);
-	digitalWrite(pin_PowerSwitch, currentSpeed == 0);
-
+	
 	steerServo.write(map(currentThrottle, 0, 100, 0, 180));
 	
 	analogWrite(pin_throttle,map(currentThrottle, 0, 100, 0, 255));

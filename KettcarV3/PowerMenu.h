@@ -6,6 +6,8 @@
 class PowerMenu : public MenuType
 {
 private:
+	bool _selectingBattery = false;
+	int _targetbatterySelection = -1;
 	/// <summary>
 	/// false = 12v Batery, true = main Batery
 	/// </summary>
@@ -23,9 +25,10 @@ private:
 
 	/// <summary>
 	/// Sets the main Power Relay to fit target
-	/// WARNING! USES DELAYS
 	/// </summary>
 	void SetMainPower(bool useMainBattery);
+
+	void SetStatusText(String text);
 public:
 	PowerMenu(LiquidCrystal_I2C* lcd, IntCallback menuChangeRequest, int* currentMenuLevel);
 	void Init();

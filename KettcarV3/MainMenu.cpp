@@ -21,14 +21,36 @@ byte downArrow[8] = {
   B00000
 };
 byte wrench[8] = {
+  B10001,
+  B10001,
+  B11111,
+  B00100,
+  B00100,
+  B00100,
+  B00100,
+  B00100
+};
+
+byte cogwheel[8] = {
   B00000,
-  B01010,
-  B01010,
+  B10101,
   B01110,
-  B00100,
-  B00100,
-  B00100,
+  B11011,
+  B01110,
+  B10101,
+  B00000,
   B00000
+};
+
+byte battery[8] = {
+  B01110,
+  B11111,
+  B10001,
+  B10001,
+  B10001,
+  B10001,
+  B10001,
+  B11111
 };
 
 // https://www.pixilart.com/draw
@@ -47,6 +69,7 @@ void MainMenu::Init()
 	_lcd->createChar(0, upArrow);
 	_lcd->createChar(1, downArrow);
 	_lcd->createChar(2, wrench);
+	_lcd->createChar(3, battery);
 	_lcd->clear();
 }
 
@@ -57,9 +80,11 @@ void MainMenu::Draw()
 	DrawWirelessStatus();
 	_lcd->setCursor(0, 2);
 	_lcd->print("Power");
+	_lcd->setCursor(17, 2);
+	_lcd->write((uint8_t)3);
 	_lcd->setCursor(0, 3);
 	_lcd->print("Einstellungen");
-	_lcd->setCursor(15, 3);
+	_lcd->setCursor(17, 3);
 	_lcd->write((uint8_t)2);
 	
 	DrawCursor(); //Draw start cursor
@@ -145,13 +170,13 @@ void MainMenu::DrawDirectionText()
 	if (_reverse)
 	{
 		_lcd->print("R\xF5\ckw\xE1rts ");
-		_lcd->setCursor(15,0);
+		_lcd->setCursor(17,0);
 		_lcd->write((uint8_t)1);
 	}
 	else
 	{
 		_lcd->print("Vorw\xE1rts ");
-		_lcd->setCursor(15, 0);
+		_lcd->setCursor(17, 0);
 		_lcd->write((uint8_t)0);
 	}
 }
